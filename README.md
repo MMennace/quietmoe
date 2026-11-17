@@ -5,10 +5,19 @@
   <img src="assets/logo-wordmark-light.png" alt="QuietMoE" width="560">
 </picture>
 
-**Big MoE models on a normal AMD PC, while you keep using it.**
+### Run a 35B AI on your gaming PC. Your PC stays usable.
 
-Run 30B-class mixture-of-experts models on **8 GB VRAM + 16 GB RAM** without your PC freezing.
-Built for AMD GPUs through Vulkan. No ROCm, no CUDA.
+GPT-5-mini-class AI on a normal AMD graphics card and 16 GB of RAM.
+Free, private, offline. No cloud, no subscription, no ROCm.
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-22d3ee)](LICENSE)
+![Linux](https://img.shields.io/badge/platform-Linux-22d3ee)
+![AMD GPUs via Vulkan](https://img.shields.io/badge/GPU-AMD%20%C2%B7%20Vulkan-f97316)
+![Model](https://img.shields.io/badge/model-Qwen3.5%2035B--A3B-f97316)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MMennace/quietmoe/main/install.sh | bash
+```
 
 by [@MMennace](https://github.com/MMennace)
 
@@ -16,56 +25,65 @@ by [@MMennace](https://github.com/MMennace)
 
 ---
 
-## Why
+## Why you'll like it
 
-Most local-AI tools are built for NVIDIA cards and assume you have plenty of RAM. On a normal
-gaming PC (RX 6600 XT, 16 GB RAM), a 20 GB model either doesn't load, or it loads and takes every
-last byte of memory until your browser and Discord start lagging.
+* 🧠 **A big model on normal hardware.** Qwen3.5-35B-A3B scores close to GPT-5-mini, and runs at
+  **~11 tokens/s** on an RX 6600 XT with 16 GB RAM.
+* 🖥️ **Your PC stays usable.** Under memory pressure, QuietMoE pushed **5.6× less of your apps
+  to swap** than running without limits, at about the same AI speed.
+* 🔒 **100% local.** Your chats, code and documents never leave your computer. Works offline.
+* 🎮 **Made for the cards people actually have.** AMD Radeon through Vulkan, including cards
+  AMD's ROCm doesn't support. No CUDA, no ROCm.
+* ⚡ **One-command install** on Ubuntu, Debian, Kali, Mint, Fedora, Arch and openSUSE. It asks
+  two questions the first time, then just runs.
 
-QuietMoE does two things:
+## What you can do with it
 
-1. **It picks models that fit the hardware.** Mixture-of-experts (MoE) models such as
-   Qwen3.5-35B-A3B know about as much as a 30B model but only use **~3B parameters per token**.
-   Each word needs a small slice of the model, not all of it.
-2. **It runs them politely.** The model gets a RAM cap, low CPU/disk priority and a VRAM reserve
-   for your desktop. When you open something heavy, QuietMoE automatically gives memory back. When
-   the PC is idle, it takes more and goes faster.
+* chat and ask questions, in a ChatGPT-style page in your browser
+* write, explain and debug code
+* summarize and explain long documents, PDFs and school projects (up to ~24,000 words)
+* plug it into other tools through its OpenAI-compatible API
 
-## How it works
+## What you need
 
-```
-            ┌──────────── GPU (8 GB) ────────────┐
- token ──►  │ shared layers + attention (always) │
-            │ hottest expert layers              │  ◄── planned from the GGUF file
-            │ ~1 GB left free for your desktop   │
-            └────────────────┬───────────────────┘
-                             │ other experts
-            ┌──────── RAM (capped, e.g. 3 GB) ───┐
-            │ recently used experts (page cache) │  ◄── governor grows/shrinks the cap
-            └────────────────┬───────────────────┘
-                             │ cache miss
-            ┌──────────── NVMe SSD ──────────────┐
-            │ the full model file (memory-mapped)│
-            └────────────────────────────────────┘
-```
+| | Minimum | Recommended |
+|---|---|---|
+| **GPU** | AMD Radeon with 6 GB VRAM (RX 400 series or newer) | 8 GB or more |
+| **RAM** | 16 GB | 16 GB or more |
+| **Disk** | SSD with ~25 GB free | NVMe SSD |
+| **OS** | Linux | |
 
-* **Planner.** QuietMoE reads the GGUF file, measures the shared weights and every expert layer,
-  and works out exactly how many expert layers fit in your VRAM budget.
-* **Streaming for free.** The model is memory-mapped and runs inside a systemd scope with
-  `MemoryHigh=<cap>`. Linux keeps the experts you use most in RAM and drops the rest. Dropped
-  experts are re-read from the SSD when needed, so RAM use stays under the cap no matter how big
-  the model is.
-* **Governor.** It starts with a big cache (fast while the PC is idle) and checks every 2 s:
-  * if Linux keeps moving your apps' memory to swap (sustained, not small background swaps),
-    or less than 2 GB is free, it shrinks the cache by 20%
-  * QuietMoE's own memory never goes to swap: at the cap, Linux only drops model cache, which
-    is re-read from the SSD
-  * it never lets the cache grow past *total RAM − what your apps use − 3 GB*
-  * after 10 s of calm it grows the cache again by 1 GB
-* **Low priority.** It uses `nice`, `ionice` and cgroup CPU/IO weights, so your apps always come
-  first.
-* **Engine.** Inference runs on [llama.cpp](https://github.com/ggml-org/llama.cpp) with the
-  Vulkan backend, which works on basically every AMD card, including ones ROCm doesn't support.
+QuietMoE measures your card and adjusts automatically. More VRAM = more of the model on the GPU =
+faster. 4 GB cards work too, but slowly (a smaller model fits them better). Tested on an
+RX 6600 XT. Other cards welcome: [share your benchmark](#benchmark-speed-and-smoothness)!
+
+## Results on a real gaming PC
+
+**RX 6600 XT 8 GB · Ryzen 7 5700G · 16 GB RAM · NVMe SSD · Qwen3.5-35B-A3B (Q4_K_M, 20.5 GB)**
+
+Idle PC (`quietmoe bench --compare`):
+
+| | No limits | QuietMoE `light` |
+|---|---|---|
+| AI speed | 9.7–15.5 tok/s (varies per run) | 11.2 tok/s |
+| Apps pushed to swap | 591 MB | 132 MB |
+| VRAM used | 6.7 GB | 5.7 GB |
+
+Busy PC (`quietmoe bench --compare --stress`, a simulated app using 6.9 GB RAM + a 1 GB file):
+
+| | No limits | QuietMoE `light` | |
+|---|---|---|---|
+| AI speed | 6.0 tok/s | 5.7 tok/s | about the same |
+| Apps pushed to swap | 17,616 MB | 3,166 MB | **5.6× less** |
+| App file reload (average) | 621 ms | 230 ms | **2.7× faster** |
+| App's worst wait for its memory | 7.9 s | 1.8 s | **4.4× shorter** |
+
+In short: when the PC is idle, QuietMoE runs about as fast as no limits. When your apps need
+the RAM, the AI runs at about the same speed, but your apps stay responsive instead of being
+pushed out to disk.
+
+<sub>`--compare` always runs "no limits" first, with a colder cache, so its speed varies more
+between runs. Numbers from v1.6.0.</sub>
 
 ## Quick start (Linux)
 
@@ -140,6 +158,42 @@ quietmoe run qwen3.5-35b-a3b --dry-run  # print the exact command without runnin
 quietmoe run qwen3.5-35b-a3b -- --temp 0.7   # pass extra flags to llama-server
 ```
 
+## How it works
+
+```
+            ┌──────────── GPU (VRAM) ────────────┐
+ token ──►  │ shared layers + attention (always) │
+            │ as many expert layers as fit       │  ◄── planned from the GGUF file
+            │ ~2 GB left free for your desktop   │
+            └────────────────┬───────────────────┘
+                             │ other experts
+            ┌──────── RAM (cache with a cap) ────┐
+            │ recently used experts (page cache) │  ◄── big when idle, shrinks when
+            └────────────────┬───────────────────┘      your apps need memory
+                             │ cache miss
+            ┌──────────── NVMe SSD ──────────────┐
+            │ the full model file (memory-mapped)│
+            └────────────────────────────────────┘
+```
+
+* **Planner.** QuietMoE reads the GGUF file, measures the shared weights and every expert layer,
+  and works out exactly how many expert layers fit in your VRAM budget.
+* **Streaming for free.** The model is memory-mapped and runs inside a systemd scope with
+  `MemoryHigh=<cap>`. Linux keeps the experts you use most in RAM and drops the rest. Dropped
+  experts are re-read from the SSD when needed, so RAM use stays under the cap no matter how big
+  the model is.
+* **Governor.** It starts with a big cache (fast while the PC is idle) and checks every 2 s:
+  * if Linux keeps moving your apps' memory to swap (sustained, not small background swaps),
+    or less than 2 GB is free, it shrinks the cache by 20%
+  * QuietMoE's own memory never goes to swap: at the cap, Linux only drops model cache, which
+    is re-read from the SSD
+  * it never lets the cache grow past *total RAM − what your apps use − 3 GB*
+  * after 10 s of calm it grows the cache again by 1 GB
+* **Low priority.** It uses `nice`, `ionice` and cgroup CPU/IO weights, so your apps always come
+  first.
+* **Engine.** Inference runs on [llama.cpp](https://github.com/ggml-org/llama.cpp) with the
+  Vulkan backend, which works on basically every AMD card, including ones ROCm doesn't support.
+
 ## Benchmark: speed AND smoothness
 
 ```bash
@@ -158,34 +212,6 @@ This runs the model with no limits (`baseline`) and then with QuietMoE (`light`)
   touch its memory. If the AI pushes the app's data out of RAM, these times jump.
 
 Results are saved as JSON in `~/.local/share/quietmoe/bench/`.
-
-### Results
-
-**RX 6600 XT 8 GB · Ryzen 7 5700G · 16 GB RAM · NVMe SSD · Qwen3.5-35B-A3B (Q4_K_M, 20.5 GB)**
-
-Idle PC (`quietmoe bench --compare`):
-
-| | No limits | QuietMoE `light` |
-|---|---|---|
-| AI speed | 9.7–15.5 tok/s (varies per run) | 11.2 tok/s |
-| Apps pushed to swap | 591 MB | 132 MB |
-| VRAM used | 6.7 GB | 5.7 GB |
-
-Busy PC (`quietmoe bench --compare --stress`, a simulated app using 6.9 GB RAM + a 1 GB file):
-
-| | No limits | QuietMoE `light` | |
-|---|---|---|---|
-| AI speed | 6.0 tok/s | 5.7 tok/s | about the same |
-| Apps pushed to swap | 17,616 MB | 3,166 MB | **5.6× less** |
-| App file reload (average) | 621 ms | 230 ms | **2.7× faster** |
-| App's worst wait for its memory | 7.9 s | 1.8 s | **4.4× shorter** |
-
-In short: when the PC is idle, QuietMoE runs about as fast as no limits. When your apps need
-the RAM, the AI runs at about the same speed, but your apps stay responsive instead of being
-pushed out to disk.
-
-<sub>`--compare` always runs "no limits" first, with a colder cache, so its speed varies more
-between runs. Numbers from v1.6.0.</sub>
 
 Ran it on your PC? Open an issue with your `bench-*.json` and I'll add it to the table.
 
