@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quietmoe"
+dynamic = ["version"]
+description = "Run big MoE language models on normal AMD PCs (8 GB VRAM, 16 GB RAM) without making the PC unusable."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "MMennace" }]
+requires-python = ">=3.10"
+dependencies = ["gguf>=0.10", "huggingface_hub>=0.23"]
+keywords = ["llm", "moe", "amd", "vulkan", "llama.cpp", "local-ai", "radeon"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: POSIX :: Linux",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "numpy"]
+
+[project.urls]
+Homepage = "https://github.com/MMennace/quietmoe"
+Issues = "https://github.com/MMennace/quietmoe/issues"
+
+[project.scripts]
+quietmoe = "quietmoe.cli:main"
+
+[tool.setuptools]
+packages = ["quietmoe"]
+
+[tool.setuptools.dynamic]
+version = { attr = "quietmoe.__version__" }
+
+[tool.setuptools.package-data]
+quietmoe = ["setup_llamacpp.sh"]
